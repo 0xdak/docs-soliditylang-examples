@@ -11,13 +11,28 @@ contract VotingDoctoredTest is Test {
     address public VOTER_ALICE = makeAddr("ALICE");
     address public VOTER_BOB = makeAddr("BOB");
     uint256 constant TRUMP_INDEX = 0;
+    bytes32 constant TRUMP_STRING = "TRUMP";
     uint256 constant CLINTON_INDEX = 1;
+    bytes32 constant CLINTON_STRING = "CLINTON";
 
     function setUp() public {
         bytes32[] memory proposalNames = new bytes32[](2);
-        proposalNames[0] = "Trump";
-        proposalNames[1] = "Clinton";
+        proposalNames[0] = TRUMP_STRING;
+        proposalNames[1] = CLINTON_STRING;
         ballot = new Ballot(proposalNames);
+    }
+
+    function testProposalsWellConstructed() public {
+        (bytes32 nameTrump, uint256 voteCountTrump) = ballot.proposals(
+            TRUMP_INDEX
+        );
+        (bytes32 nameClinton, uint256 voteCountClinton) = ballot.proposals(
+            CLINTON_INDEX
+        );
+        assertEq(nameTrump, TRUMP_STRING);
+        assertEq(voteCountTrump, 0);
+        assertEq(nameClinton, CLINTON_STRING);
+        assertEq(voteCountClinton, 0);
     }
 
     // test giveRightToVote() function sets right correct.

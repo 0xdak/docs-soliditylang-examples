@@ -3,14 +3,18 @@ pragma solidity >=0.7.0 <0.9.0;
 
 /// @title Voting with delegation.
 contract Ballot {
-    // This declares a new complex type which will
-    // be used for variables later.
-    // It will represent a single voter.
+    error Ballot__SenderIsNotTheChairperson();
+    error Ballot__VoterAlreadyVoted();
+    error Ballot__SenderHasNoRightToVote();
+    error Ballot__SenderAlreadyVoted();
+    error Ballot__SelfDelegationIsntAllowed();
+    error Ballot__FoundLoopInDelegation();
+
     struct Voter {
-        uint weight; // weight is accumulated by delegation
+        uint256 weight; // weight is accumulated by delegation
         bool voted; // if true, that person already voted
         address delegate; // person delegated to
-        uint vote; // index of the voted proposal
+        uint256 vote; // index of the voted proposal
     }
 
     // This is a type for a single proposal.
@@ -33,13 +37,7 @@ contract Ballot {
         chairperson = msg.sender;
         voters[chairperson].weight = 1;
 
-        // For each of the provided proposal names,
-        // create a new proposal object and add it
-        // to the end of the array.
         for (uint i = 0; i < proposalNames.length; i++) {
-            // `Proposal({...})` creates a temporary
-            // Proposal object and `proposals.push(...)`
-            // appends it to the end of `proposals`.
             proposals.push(Proposal({name: proposalNames[i], voteCount: 0}));
         }
     }
@@ -47,11 +45,8 @@ contract Ballot {
     // Give `voter` the right to vote on this ballot.
     // May only be called by `chairperson`.
     function giveRightToVote(address voter) public {
-        require(
-            msg.sender == chairperson,
-            "Only chairperson can give right to vote."
-        );
-        require(!voters[voter].voted, "The voter already voted.");
+        require(msg.sender == chairperson, Ballot__SenderIsNotTheChairperson());
+        require(!voters[voter].voted, Ballot__VoterAlreadyVoted());
         require(voters[voter].weight == 0);
         voters[voter].weight = 1;
     }
@@ -60,10 +55,10 @@ contract Ballot {
     function delegate(address to) public {
         // assigns reference
         Voter storage sender = voters[msg.sender];
-        require(sender.weight != 0, "You have no right to vote");
-        require(!sender.voted, "You already voted.");
+        require(sender.weight != 0, Ballot__SenderHasNoRightToVote());
+        require(!sender.voted, Ballot__SenderAlreadyVoted());
 
-        require(to != msg.sender, "Self-delegation is disallowed.");
+        require(to != msg.sender, Ballot__SelfDelegationIsntAllowed());
         // Forward the delegation as long as
         // `to` also delegated.
         // In general, such loops are very dangerous,
@@ -75,7 +70,7 @@ contract Ballot {
             to = voters[to].delegate;
 
             // We found a loop in the delegation, not allowed.
-            require(to != msg.sender, "Found loop in delegation.");
+            require(to != msg.sender, Ballot__FoundLoopInDelegation());
         }
 
         Voter storage delegate_ = voters[to];
@@ -103,8 +98,8 @@ contract Ballot {
     /// to proposal `proposals[proposal].name`.
     function vote(uint256 proposal) public {
         Voter storage sender = voters[msg.sender];
-        require(sender.weight != 0, "Has no right to vote");
-        require(!sender.voted, "Already voted.");
+        require(sender.weight != 0, Ballot__SenderHasNoRightToVote());
+        require(!sender.voted, Ballot__SenderAlreadyVoted());
         sender.voted = true;
         sender.vote = proposal;
 
@@ -116,7 +111,7 @@ contract Ballot {
 
     /// @dev Computes the winning proposal taking all
     /// previous votes into account.
-    function winningProposal() public view returns (uint winningProposal_) {
+    function winningProposal() public view returns (uint256 winningProposal_) {
         uint winningVoteCount = 0;
         for (uint p = 0; p < proposals.length; p++) {
             if (proposals[p].voteCount > winningVoteCount) {
@@ -129,8 +124,8 @@ contract Ballot {
     // Calls winningProposal() function to get the index
     // of the winner contained in the proposals array and then
     // returns the name of the winner
-    function winnerName() public view returns (bytes32 winnerName_) {
-        winnerName_ = proposals[winningProposal()].name;
+    function winnerName() public view returns (bytes32) {
+        return proposals[winningProposal()].name;
     }
 }
 
