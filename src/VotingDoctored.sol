@@ -47,16 +47,6 @@ contract Ballot {
     // Give `voter` the right to vote on this ballot.
     // May only be called by `chairperson`.
     function giveRightToVote(address voter) public {
-        // If the first argument of `require` evaluates
-        // to `false`, execution terminates and all
-        // changes to the state and to Ether balances
-        // are reverted.
-        // This used to consume all gas in old EVM versions, but
-        // not anymore.
-        // It is often a good idea to use `require` to check if
-        // functions are called correctly.
-        // As a second argument, you can also provide an
-        // explanation about what went wrong.
         require(
             msg.sender == chairperson,
             "Only chairperson can give right to vote."
@@ -67,7 +57,7 @@ contract Ballot {
     }
 
     // Delegate your vote to the voter `to`.
-    function delegate(address to) external {
+    function delegate(address to) public {
         // assigns reference
         Voter storage sender = voters[msg.sender];
         require(sender.weight != 0, "You have no right to vote");
@@ -111,7 +101,7 @@ contract Ballot {
 
     /// Give your vote (including votes delegated to you)
     /// to proposal `proposals[proposal].name`.
-    function vote(uint proposal) public {
+    function vote(uint256 proposal) public {
         Voter storage sender = voters[msg.sender];
         require(sender.weight != 0, "Has no right to vote");
         require(!sender.voted, "Already voted.");
